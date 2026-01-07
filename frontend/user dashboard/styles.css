@@ -182,15 +182,6 @@ textarea:focus {
   min-height: 240px;
 }
 
-.insights-loading h2 {
-  margin: 0;
-  font-size: 22px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
 .insights-header {
   display: flex;
   justify-content: space-between;
@@ -292,6 +283,25 @@ textarea:focus {
   display: none;
 }
 
+.loading-card[hidden] {
+  display: none !important;
+}
+
+.loading-card:not([hidden]) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
 .spinner {
   width: 60px;
   height: 60px;
@@ -303,6 +313,15 @@ textarea:focus {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+.loading-content h2 {
+  margin: 0;
+  font-size: 22px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 @media (max-width: 720px) {

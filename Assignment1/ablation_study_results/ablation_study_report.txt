@@ -1,0 +1,39 @@
+================================================================================
+ABLATION STUDY - COMPREHENSIVE EVALUATION REPORT
+================================================================================
+
+OVERALL METRICS
+--------------------------------------------------------------------------------
+Method                    Accuracy     Precision    F1-Score    
+--------------------------------------------------------------------------------
+Zero-Shot                 0.5965       0.6898       0.5796      
+Few-Shot                  0.6585       0.7006       0.6310      
+Chain-of-Thought          0.6860       0.7341       0.6752      
+
+
+DETAILED PER-CLASS METRICS
+================================================================================
+
+Zero-Shot
+--------------------------------------------------------------------------------
+1-star: Precision=0.6471, Recall=0.6875, F1=0.6667, Support=16
+2-star: Precision=0.4545, Recall=0.6667, F1=0.5405, Support=15
+3-star: Precision=0.8750, Recall=0.2800, F1=0.4242, Support=25
+4-star: Precision=0.8108, Recall=0.4412, F1=0.5714, Support=68
+5-star: Precision=0.5057, Recall=0.9362, F1=0.6567, Support=47
+
+Few-Shot
+--------------------------------------------------------------------------------
+1-star: Precision=0.7000, Recall=0.7000, F1=0.7000, Support=10
+2-star: Precision=0.5000, Recall=0.7273, F1=0.5926, Support=11
+3-star: Precision=1.0000, Recall=0.0769, F1=0.1429, Support=13
+4-star: Precision=0.7045, Recall=0.6327, F1=0.6667, Support=49
+5-star: Precision=0.6538, Recall=0.8500, F1=0.7391, Support=40
+
+Chain-of-Thought
+--------------------------------------------------------------------------------
+1-star: Precision=0.6875, Recall=0.6471, F1=0.6667, Support=17
+2-star: Precision=0.4545, Recall=0.7143, F1=0.5556, Support=14
+3-star: Precision=1.0000, Recall=0.3333, F1=0.5000, Support=27
+4-star: Precision=0.7458, Recall=0.6667, F1=0.7040, Support=66
+5-star: Precision=0.6667, Recall=0.9167, F1=0.7719, Support=48
