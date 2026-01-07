@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Review Analytics Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=4" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Realtime Admin Analytics</p>
+        <h1>Monitor reviews, spot issues, and celebrate wins</h1>
+        <p class="subhead">Filter by website, product, or classification and watch metrics update live.</p>
+      </div>
+      <div class="status-pills">
+        <span class="pill" id="api-status">API: —</span>
+        <span class="pill" id="ws-status">WebSocket: —</span>
+      </div>
+    </header>
+
+    <section class="card filters">
+      <div class="filter">
+        <label for="website">Website</label>
+        <select id="website">
+          <option value="">All websites</option>
+        </select>
+      </div>
+      <div class="filter">
+        <label for="product">Product</label>
+        <select id="product">
+          <option value="">All products</option>
+        </select>
+      </div>
+      <div class="filter">
+        <label for="classification">Classification</label>
+        <select id="classification">
+          <option value="">All</option>
+          <option value="genuine">genuine</option>
+          <option value="product_issue">product_issue</option>
+          <option value="delivery_issue">delivery_issue</option>
+          <option value="sarcasm">sarcasm</option>
+          <option value="other">other</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card metric">
+        <p class="eyebrow">Total Reviews</p>
+        <div class="metric-value" id="metric-total">0</div>
+      </div>
+      <div class="card metric">
+        <p class="eyebrow">Avg Rating</p>
+        <div class="metric-value" id="metric-avg">0.0</div>
+      </div>
+      <div class="card metric">
+        <p class="eyebrow">Top Classification</p>
+        <div class="metric-value" id="metric-top-class">—</div>
+      </div>
+      <div class="card metric">
+        <p class="eyebrow">Top Website</p>
+        <div class="metric-value" id="metric-top-site">—</div>
+      </div>
+    </section>
+
+    <section class="card ai-card">
+      <div class="panel-header">
+        <p class="eyebrow">AI Insights</p>
+        <div class="badges" style="margin-top:4px;">
+          <div class="badge badge-secondary" id="insight-updated">—</div>
+        </div>
+      </div>
+      <h3 id="insight-text">—</h3>
+      <p class="eyebrow" style="margin-top:10px;">Actions</p>
+      <ul id="insight-actions" class="suggestions"></ul>
+    </section>
+
+    <section class="card flex">
+      <div class="panel">
+        <div class="panel-header">
+          <p class="eyebrow">Classification Breakdown</p>
+        </div>
+        <canvas id="chart-classification" height="160"></canvas>
+        <div id="classification-list" class="list"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <p class="eyebrow">Website Breakdown</p>
+        </div>
+        <canvas id="chart-website" height="160"></canvas>
+        <div id="website-list" class="list"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <p class="eyebrow">Product Breakdown</p>
+        </div>
+        <canvas id="chart-product" height="160"></canvas>
+        <div id="product-list" class="list"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="panel-header">
+        <p class="eyebrow">Latest Reviews</p>
+      </div>
+      <div id="latest-reviews" class="reviews"></div>
+      <div class="panel-header" style="margin-top:12px;">
+        <p class="eyebrow">Word Cloud (feedback terms)</p>
+      </div>
+      <div id="word-cloud" class="word-cloud"></div>
+    </section>
+  </div>
+
+  <script src="script.js?v=4"></script>
+</body>
+</html>

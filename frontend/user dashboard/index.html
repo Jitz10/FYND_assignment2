@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Review AI Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Feedback to Insights</p>
+        <h1>Submit a review and see AI insights instantly</h1>
+        <p class="subhead">Ratings 1-5 with free-text feedback. The AI returns a concise summary plus actionable suggestions.</p>
+      </div>
+      <div class="status" id="api-status">Checking API…</div>
+    </header>
+
+    <main class="layout">
+      <section class="card">
+        <h2>New Review</h2>
+        <form id="review-form" class="form">
+          <label class="field">
+            <span>Website</span>
+            <select name="website" id="website" required>
+              <option value="" disabled selected>Select website</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Product</span>
+            <select name="product" id="product" required>
+              <option value="" disabled selected>Select product</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Rating (1-5)</span>
+            <select name="rating" id="rating" required>
+              <option value="" disabled selected>Select</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Feedback</span>
+            <textarea id="feedback" name="feedback" rows="5" placeholder="Share what worked and what didn't" required></textarea>
+          </label>
+
+          <button type="submit" class="btn" id="submit-btn">Submit Review</button>
+          <p class="hint" id="form-hint">AI will generate a summary and suggestions.</p>
+        </form>
+      </section>
+
+      <section class="card loading-card" id="loading-card" hidden>
+        <div class="loading-content">
+          <div class="spinner"></div>
+          <h2>Processing your review...</h2>
+          <p class="subhead">AI is analyzing feedback and generating insights</p>
+        </div>
+      </section>
+
+      <section class="card insights" id="insights" hidden>
+        <div class="insights-header">
+          <div>
+            <p class="eyebrow">Latest AI Insight (User-facing)</p>
+            <h2 id="insight-summary-user">—</h2>
+          </div>
+          <div class="badges">
+            <div class="badge" id="insight-rating"></div>
+            <div class="badge badge-secondary" id="insight-classification"></div>
+          </div>
+        </div>
+        <div>
+          <p class="eyebrow">User Suggestions</p>
+          <ul id="insight-suggestions-user" class="suggestions"></ul>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

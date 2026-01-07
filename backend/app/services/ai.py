@@ -20,49 +20,55 @@ async def generate_summary_and_suggestions(
 ) -> Tuple[str, List[str], str, List[str], str]:
     api_key = os.getenv("GROQ_API_KEY")
     if api_key:
-        from groq import Groq  # type: ignore
+        try:
+            from groq import Groq  # type: ignore
 
-        client = Groq(api_key=api_key)
-        model = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
-        catalog_text = "\n".join(
-            f"- {site}: {', '.join(items)}" for site, items in CATALOG.items()
-        )
-        prompt = (
-            "You are an assistant for customer feedback insights. "
-            "Given a star rating (1-5), review text, website, and product, return a JSON object with: "
-            "'user_summary' (one concise sentence for the end-user), 'user_suggestions' (3-4 short actionable items for the user), "
-            "'vendor_summary' (one concise sentence for the vendor), 'vendor_suggestions' (3-4 short actionable items for the vendor), and 'classification' "
-            "(one of: product_issue, delivery_issue, sarcasm, genuine, other). Use 'genuine' for clearly positive, authentic praise (typically rating >= 4) with no sarcasm.\n\n"
-            f"Rating: {rating}/5\nReview: {feedback}\nWebsite: {website}\nProduct: {product}\n\n"
-            "Catalog (website -> products):\n"
-            f"{catalog_text}\n\n"
-            "Respond ONLY with JSON having keys 'user_summary', 'user_suggestions', 'vendor_summary', 'vendor_suggestions', 'classification'."
-        )
-        resp = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": "Return concise, business-friendly insights only."},
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.3,
-            response_format={"type": "json_object"},
-        )
-        content = (resp.choices[0].message.content or "").strip()
-        print("AI response content:", content)
-        data = _extract_json(content)
-        if data and "user_summary" in data and "user_suggestions" in data:
-            classification = str(data.get("classification", "other"))
-            user_summary = str(data.get("user_summary", ""))
-            user_suggestions = list(data.get("user_suggestions", []))[:4]
-            vendor_summary = str(data.get("vendor_summary", user_summary))
-            vendor_suggestions = list(data.get("vendor_suggestions", user_suggestions))[:4]
+            client = Groq(api_key=api_key)
+            model = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
+            catalog_text = "\n".join(
+                f"- {site}: {', '.join(items)}" for site, items in CATALOG.items()
+            )
+            prompt = (
+                "You are an assistant for customer feedback insights. "
+                "Given a star rating (1-5), review text, website, and product, return a JSON object with: "
+                "'user_summary' (one concise sentence for the end-user), 'user_suggestions' (3-4 short actionable items for the user), "
+                "'vendor_summary' (one concise sentence for the vendor), 'vendor_suggestions' (3-4 short actionable items for the vendor), and 'classification' "
+                "(one of: product_issue, delivery_issue, sarcasm, genuine, other). Use 'genuine' for clearly positive, authentic praise (typically rating >= 4) with no sarcasm.\n\n"
+                f"Rating: {rating}/5\nReview: {feedback}\nWebsite: {website}\nProduct: {product}\n\n"
+                "Catalog (website -> products):\n"
+                f"{catalog_text}\n\n"
+                "Respond ONLY with JSON having keys 'user_summary', 'user_suggestions', 'vendor_summary', 'vendor_suggestions', 'classification'."
+            )
+            resp = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": "Return concise, business-friendly insights only."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.3,
+                response_format={"type": "json_object"},
+            )
+            content = (resp.choices[0].message.content or "").strip()
+            print("AI response content:", content)
+            data = _extract_json(content)
+            if data and "user_summary" in data and "user_suggestions" in data:
+                classification = str(data.get("classification", "other"))
+                user_summary = str(data.get("user_summary", ""))
+                user_suggestions = list(data.get("user_suggestions", []))[:4]
+                vendor_summary = str(data.get("vendor_summary", user_summary))
+                vendor_suggestions = list(data.get("vendor_suggestions", user_suggestions))[:4]
+                return user_summary, user_suggestions, vendor_summary, vendor_suggestions, classification
+
+            # If the AI response is malformed, fall back to heuristic to avoid 500s
+            print("AI response malformed, falling back to heuristic")
+            user_summary, user_suggestions, vendor_summary, vendor_suggestions, classification = _heuristic_summary(
+                rating, feedback
+            )
             return user_summary, user_suggestions, vendor_summary, vendor_suggestions, classification
-
-        # If the AI response is malformed, fall back to heuristic to avoid 500s
-        user_summary, user_suggestions, vendor_summary, vendor_suggestions, classification = _heuristic_summary(
-            rating, feedback
-        )
-        return user_summary, user_suggestions, vendor_summary, vendor_suggestions, classification
+        except Exception as e:
+            # If AI call fails (network, timeout, API error), fall back to heuristic
+            print(f"AI service error: {e}, falling back to heuristic")
+            return _heuristic_summary(rating, feedback)
 
     # Fallback only when no AI key is configured
     return _heuristic_summary(rating, feedback)
