@@ -149,9 +149,46 @@ textarea:focus {
 }
 
 .insights {
+  display: none;
+  position: relative;
+  min-height: 260px;
+}
+
+.insights[hidden] {
+  display: none;
+}
+
+.insights:not([hidden]) {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.insights-body[hidden] {
+  display: none;
+}
+
+.insights-loading[hidden] {
+  display: none;
+}
+
+.insights-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  min-height: 240px;
+}
+
+.insights-loading h2 {
+  margin: 0;
+  font-size: 22px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .insights-header {
@@ -252,18 +289,7 @@ textarea:focus {
 }
 
 .loading-card {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 280px;
-}
-
-.loading-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  text-align: center;
+  display: none;
 }
 
 .spinner {
@@ -277,15 +303,6 @@ textarea:focus {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-
-.loading-content h2 {
-  margin: 0;
-  font-size: 22px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
 @media (max-width: 720px) {

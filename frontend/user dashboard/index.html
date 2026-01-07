@@ -60,28 +60,28 @@
         </form>
       </section>
 
-      <section class="card loading-card" id="loading-card" hidden>
-        <div class="loading-content">
+      <section class="card insights" id="insights" hidden>
+        <div class="insights-loading" id="insights-loading" hidden>
           <div class="spinner"></div>
           <h2>Processing your review...</h2>
           <p class="subhead">AI is analyzing feedback and generating insights</p>
         </div>
-      </section>
 
-      <section class="card insights" id="insights" hidden>
-        <div class="insights-header">
+        <div class="insights-body" id="insights-body" hidden>
+          <div class="insights-header">
+            <div>
+              <p class="eyebrow">Latest AI Insight (User-facing)</p>
+              <h2 id="insight-summary-user">—</h2>
+            </div>
+            <div class="badges">
+              <div class="badge" id="insight-rating"></div>
+              <div class="badge badge-secondary" id="insight-classification"></div>
+            </div>
+          </div>
           <div>
-            <p class="eyebrow">Latest AI Insight (User-facing)</p>
-            <h2 id="insight-summary-user">—</h2>
+            <p class="eyebrow">User Suggestions</p>
+            <ul id="insight-suggestions-user" class="suggestions"></ul>
           </div>
-          <div class="badges">
-            <div class="badge" id="insight-rating"></div>
-            <div class="badge badge-secondary" id="insight-classification"></div>
-          </div>
-        </div>
-        <div>
-          <p class="eyebrow">User Suggestions</p>
-          <ul id="insight-suggestions-user" class="suggestions"></ul>
         </div>
       </section>
     </main>

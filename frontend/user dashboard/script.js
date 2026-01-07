@@ -9,11 +9,12 @@ const submitBtn = document.getElementById("submit-btn");
 const formHint = document.getElementById("form-hint");
 const apiStatus = document.getElementById("api-status");
 const insightsSection = document.getElementById("insights");
+const insightsBody = document.getElementById("insights-body");
+const insightsLoading = document.getElementById("insights-loading");
 const insightSummaryUser = document.getElementById("insight-summary-user");
 const insightSuggestionsUser = document.getElementById("insight-suggestions-user");
 const insightRating = document.getElementById("insight-rating");
 const insightClassification = document.getElementById("insight-classification");
-const loadingCard = document.getElementById("loading-card");
 
 const CATALOG = {
   "alpha-shop": ["alpha-phone", "alpha-case", "alpha-charge"],
@@ -57,13 +58,11 @@ function renderInsight(review) {
     console.error('No review data to render');
     return;
   }
-  // Force hide loading card
-  if (loadingCard) {
-    loadingCard.hidden = true;
-    loadingCard.style.display = 'none';
-  }
+  // Show insights content and hide loader
   insightsSection.hidden = false;
-  insightsSection.style.display = '';
+  insightsLoading.hidden = true;
+  insightsBody.hidden = false;
+  
   insightSummaryUser.textContent = review.ai_summary_user || "(no summary)";
   insightRating.textContent = review.rating ? `${review.rating}/5` : "—";
   insightClassification.textContent = review.classification || "—";
@@ -113,14 +112,9 @@ form.addEventListener("submit", async (e) => {
   submitBtn.textContent = "Submitting...";
   formHint.textContent = "";
   formHint.style.color = "";
-  if (insightsSection) {
-    insightsSection.hidden = true;
-    insightsSection.style.display = 'none';
-  }
-  if (loadingCard) {
-    loadingCard.hidden = false;
-    loadingCard.style.display = '';
-  }
+  insightsSection.hidden = false;
+  insightsLoading.hidden = false;
+  insightsBody.hidden = true;
 
   try {
     const controller = new AbortController();
@@ -166,14 +160,9 @@ form.addEventListener("submit", async (e) => {
     productEl.innerHTML = '<option value="" disabled selected>Select product</option>';
     
   } catch (err) {
-    if (loadingCard) {
-      loadingCard.hidden = true;
-      loadingCard.style.display = 'none';
-    }
-    if (insightsSection) {
-      insightsSection.hidden = true;
-      insightsSection.style.display = 'none';
-    }
+    insightsLoading.hidden = true;
+    insightsBody.hidden = true;
+    insightsSection.hidden = true;
     
     let userMessage = "An error occurred. Please try again.";
     
@@ -193,6 +182,7 @@ form.addEventListener("submit", async (e) => {
     submitBtn.textContent = "Submit Review";
   }
 });
+
 websiteEl.addEventListener("change", (e) => {
   try {
     populateProducts(e.target.value);
@@ -203,10 +193,9 @@ websiteEl.addEventListener("change", (e) => {
   }
 });
 
+// Initialize on page load
 populateWebsites();
-
-// Initialize visibility states
-if (loadingCard) loadingCard.hidden = true;
-if (insightsSection) insightsSection.hidden = true;
-
+insightsLoading.hidden = true;
+insightsBody.hidden = true;
+insightsSection.hidden = true;
 checkHealth();
