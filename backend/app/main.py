@@ -15,14 +15,21 @@ from .services.database import get_all_reviews, save_review, ping_database
 class ReviewIn(BaseModel):
     rating: int = Field(ge=1, le=5, description="Rating from 1 to 5")
     feedback: str = Field(min_length=1, max_length=4000, description="User feedback text")
+    website: str = Field(min_length=1, description="Website identifier")
+    product: str = Field(min_length=1, description="Product identifier")
 
 
 class ReviewRecord(BaseModel):
     id: str = Field(alias="_id")
     rating: int
     feedback: str
-    ai_summary: str
-    ai_suggestions: List[str]
+    website: str = ""
+    product: str = ""
+    ai_summary_user: str = ""
+    ai_suggestions_user: List[str] = Field(default_factory=list)
+    ai_summary_vendor: str = ""
+    ai_suggestions_vendor: List[str] = Field(default_factory=list)
+    classification: str = ""
     created_at: Optional[str] = None
 
     class Config:
@@ -56,13 +63,26 @@ app.mount("/ui", StaticFiles(directory=FRONTEND_DIR, html=True), name="ui")
 
 @app.post("/reviews", response_model=ReviewRecord)
 async def create_review(review: ReviewIn) -> ReviewRecord:
-    summary, suggestions = await generate_summary_and_suggestions(review.rating, review.feedback)
+    (
+        user_summary,
+        user_suggestions,
+        vendor_summary,
+        vendor_suggestions,
+        classification,
+    ) = await generate_summary_and_suggestions(
+        review.rating, review.feedback, review.website, review.product
+    )
     created_at = datetime.utcnow()
     doc = {
         "rating": review.rating,
         "feedback": review.feedback,
-        "ai_summary": summary,
-        "ai_suggestions": suggestions,
+        "website": review.website,
+        "product": review.product,
+        "ai_summary_user": user_summary,
+        "ai_suggestions_user": user_suggestions,
+        "ai_summary_vendor": vendor_summary,
+        "ai_suggestions_vendor": vendor_suggestions,
+        "classification": classification,
         "created_at": created_at,
     }
     try:
@@ -77,8 +97,13 @@ async def create_review(review: ReviewIn) -> ReviewRecord:
         _id=inserted_id,
         rating=review.rating,
         feedback=review.feedback,
-        ai_summary=summary,
-        ai_suggestions=suggestions,
+        website=review.website,
+        product=review.product,
+        ai_summary_user=user_summary,
+        ai_suggestions_user=user_suggestions,
+        ai_summary_vendor=vendor_summary,
+        ai_suggestions_vendor=vendor_suggestions,
+        classification=classification,
         created_at=created_at.isoformat() + "Z",
     )
 

@@ -1,4 +1,3 @@
-import asyncio
 import json
 import os
 import re
@@ -8,20 +7,36 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Temporary catalog mapping websites to products
+CATALOG = {
+    "alpha-shop": ["alpha-phone", "alpha-case", "alpha-charge"],
+    "beta-store": ["beta-laptop", "beta-mouse", "beta-bag"],
+    "gamma-mart": ["gamma-watch", "gamma-band", "gamma-scale"],
+}
 
-async def generate_summary_and_suggestions(rating: int, feedback: str) -> Tuple[str, List[str]]:
+
+async def generate_summary_and_suggestions(
+    rating: int, feedback: str, website: str, product: str
+) -> Tuple[str, List[str], str, List[str], str]:
     api_key = os.getenv("GROQ_API_KEY")
     if api_key:
         from groq import Groq  # type: ignore
 
         client = Groq(api_key=api_key)
         model = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
+        catalog_text = "\n".join(
+            f"- {site}: {', '.join(items)}" for site, items in CATALOG.items()
+        )
         prompt = (
             "You are an assistant for customer feedback insights. "
-            "Given a star rating (1-5) and review text, return a JSON object with: "
-            "'summary' (one concise sentence) and 'suggestions' (3-4 short, actionable items).\n\n"
-            f"Rating: {rating}/5\nReview: {feedback}\n\n"
-            "Respond ONLY with JSON having keys 'summary' and 'suggestions'."
+            "Given a star rating (1-5), review text, website, and product, return a JSON object with: "
+            "'user_summary' (one concise sentence for the end-user), 'user_suggestions' (3-4 short actionable items for the user), "
+            "'vendor_summary' (one concise sentence for the vendor), 'vendor_suggestions' (3-4 short actionable items for the vendor), and 'classification' "
+            "(one of: product_issue, delivery_issue, sarcasm, genuine, other). Use 'genuine' for clearly positive, authentic praise (typically rating >= 4) with no sarcasm.\n\n"
+            f"Rating: {rating}/5\nReview: {feedback}\nWebsite: {website}\nProduct: {product}\n\n"
+            "Catalog (website -> products):\n"
+            f"{catalog_text}\n\n"
+            "Respond ONLY with JSON having keys 'user_summary', 'user_suggestions', 'vendor_summary', 'vendor_suggestions', 'classification'."
         )
         resp = client.chat.completions.create(
             model=model,
@@ -34,11 +49,19 @@ async def generate_summary_and_suggestions(rating: int, feedback: str) -> Tuple[
         )
         content = (resp.choices[0].message.content or "").strip()
         data = _extract_json(content)
-        if data and "summary" in data and "suggestions" in data:
-            return str(data["summary"]), list(data["suggestions"])[:4]
+        if data and "user_summary" in data and "user_suggestions" in data:
+            classification = str(data.get("classification", "other"))
+            user_summary = str(data.get("user_summary", ""))
+            user_suggestions = list(data.get("user_suggestions", []))[:4]
+            vendor_summary = str(data.get("vendor_summary", user_summary))
+            vendor_suggestions = list(data.get("vendor_suggestions", user_suggestions))[:4]
+            return user_summary, user_suggestions, vendor_summary, vendor_suggestions, classification
 
         # If the AI response is malformed, fall back to heuristic to avoid 500s
-        return _heuristic_summary(rating, feedback)
+        user_summary, user_suggestions, vendor_summary, vendor_suggestions, classification = _heuristic_summary(
+            rating, feedback
+        )
+        return user_summary, user_suggestions, vendor_summary, vendor_suggestions, classification
 
     # Fallback only when no AI key is configured
     return _heuristic_summary(rating, feedback)
@@ -59,7 +82,7 @@ def _extract_json(text: str):
     return None
 
 
-def _heuristic_summary(rating: int, feedback: str) -> Tuple[str, List[str]]:
+def _heuristic_summary(rating: int, feedback: str) -> Tuple[str, List[str], str, List[str], str]:
     cleaned = " ".join(feedback.split())
     if len(cleaned) > 220:
         cleaned_short = cleaned[:210].rsplit(" ", 1)[0] + "…"
@@ -78,46 +101,112 @@ def _heuristic_summary(rating: int, feedback: str) -> Tuple[str, List[str]]:
         tone = "very negative"
 
     summary = f"A {tone} {rating}/5 review: {cleaned_short}"
+    vendor_summary = f"User sentiment is {tone} ({rating}/5). Key text: {cleaned_short}"
 
     if rating >= 5:
-        suggestions = [
-            "Acknowledge the praise and keep consistency",
-            "Identify what delighted the user and amplify it",
-            "Invite a testimonial or referral",
+        user_suggestions = [
+            "Keep enjoying and share what you love most",
+            "Consider leaving a public review",
+            "Check related accessories for added value",
+        ]
+        vendor_suggestions = [
+            "Acknowledge praise publicly and maintain quality",
+            "Highlight the loved features in marketing",
+            "Invite referrals or testimonials",
         ]
     elif rating == 4:
-        suggestions = [
-            "Thank the user and address minor issues",
+        user_suggestions = [
+            "Let us know any small issues you noticed",
+            "Use tips/resources to get full value",
+            "Share feedback to reach a perfect 5",
+        ]
+        vendor_suggestions = [
+            "Address minor issues raised by users",
             "Monitor recurring themes to reach 5/5",
-            "Offer tips or resources to enhance value",
+            "Improve onboarding or guidance materials",
         ]
     elif rating == 3:
-        suggestions = [
+        user_suggestions = [
+            "Tell us specific pain points so we can fix them",
+            "Try suggested tips to improve experience",
+            "Expect follow-up from support",
+        ]
+        vendor_suggestions = [
             "Reach out to clarify pain points",
-            "Prioritize quick wins to improve experience",
-            "Provide guidance or better onboarding",
+            "Prioritize quick wins to lift satisfaction",
+            "Improve guidance/onboarding where users struggle",
         ]
     elif rating == 2:
-        suggestions = [
+        user_suggestions = [
+            "We’re sorry—support will reach out to resolve",
+            "Share specifics so we can fix them fast",
+            "Accept a make-good while we address issues",
+        ]
+        vendor_suggestions = [
             "Contact the user to resolve issues",
             "Fix top friction points causing dissatisfaction",
-            "Offer a make-good (discount, support session)",
+            "Offer make-good (discount, support session)",
         ]
     else:
-        suggestions = [
-            "Escalate and remediate critical issues immediately",
-            "Conduct root-cause analysis on failures",
-            "Proactively follow up after fixes",
+        user_suggestions = [
+            "We’re escalating your concerns immediately",
+            "Expect proactive follow-up after fixes",
+            "Tell us the top blockers to prioritize",
+        ]
+        vendor_suggestions = [
+            "Escalate critical issues immediately",
+            "Perform root-cause analysis on failures",
+            "Proactively follow up after remediation",
         ]
 
     kw = cleaned.lower()
-    if any(k in kw for k in ["slow", "lag", "performance", "loading"]):
-        suggestions.append("Improve performance and loading responsiveness")
-    elif any(k in kw for k in ["bug", "crash", "error", "issue"]):
-        suggestions.append("Fix stability issues and add regression tests")
-    elif any(k in kw for k in ["price", "cost", "expensive", "pricing"]):
-        suggestions.append("Review pricing and communicate value more clearly")
-    elif any(k in kw for k in ["support", "help", "service", "response"]):
-        suggestions.append("Improve support responsiveness and resolution quality")
+    classification = "other"
+    sarcasm_terms = ["lol", "haha", "sarcasm", "yeah right", "sure", "totally"]
+    negative_terms = [
+        "slow",
+        "lag",
+        "performance",
+        "loading",
+        "bug",
+        "crash",
+        "error",
+        "issue",
+        "price",
+        "cost",
+        "expensive",
+        "pricing",
+        "support",
+        "help",
+        "service",
+        "response",
+        "delay",
+        "late",
+        "shipping",
+        "delivery",
+        "problem",
+        "bad",
+        "hate",
+        "disappointed",
+    ]
 
-    return summary, suggestions[:4]
+    if any(k in kw for k in sarcasm_terms):
+        classification = "sarcasm"
+    elif rating >= 4 and not any(k in kw for k in negative_terms):
+        classification = "genuine"
+    elif any(k in kw for k in ["slow", "lag", "performance", "loading"]):
+        vendor_suggestions.append("Improve performance and loading responsiveness")
+        classification = "product_issue"
+    elif any(k in kw for k in ["bug", "crash", "error", "issue"]):
+        vendor_suggestions.append("Fix stability issues and add regression tests")
+        classification = "product_issue"
+    elif any(k in kw for k in ["price", "cost", "expensive", "pricing"]):
+        vendor_suggestions.append("Review pricing and communicate value more clearly")
+        classification = "product_issue"
+    elif any(k in kw for k in ["support", "help", "service", "response"]):
+        vendor_suggestions.append("Improve support responsiveness and resolution quality")
+        classification = "delivery_issue"
+    elif any(k in kw for k in ["delay", "late", "shipping", "delivery"]):
+        vendor_suggestions.append("Improve delivery speed and tracking transparency")
+        classification = "delivery_issue"
+
+    return summary, user_suggestions[:4], vendor_summary, vendor_suggestions[:4], classification
