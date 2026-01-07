@@ -16,6 +16,7 @@ from .services.analytics import (
     register_analytics_ws,
     unregister_analytics_ws,
 )
+from .services.insights import generate_insights
 from .services.database import get_all_reviews, save_review, ping_database
 
 
@@ -160,6 +161,29 @@ async def analytics_summary(
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Database unavailable. Please check MONGODB_URI/connectivity.",
+        ) from exc
+
+
+@app.get("/analytics/insights")
+async def analytics_insights(
+    website: Optional[str] = None,
+    product: Optional[str] = None,
+    classification: Optional[str] = None,
+):
+    filters = {}
+    if website:
+        filters["website"] = website
+    if product:
+        filters["product"] = product
+    if classification:
+        filters["classification"] = classification
+    try:
+        insights = await generate_insights(filters)
+        return insights
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Analytics insights unavailable. Please check MONGODB_URI/connectivity.",
         ) from exc
 
 
