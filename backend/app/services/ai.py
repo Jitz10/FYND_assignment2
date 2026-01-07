@@ -5,44 +5,42 @@ import re
 from typing import List, Tuple
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
+
 async def generate_summary_and_suggestions(rating: int, feedback: str) -> Tuple[str, List[str]]:
-    try:
-        api_key = os.getenv("GROQ_API_KEY")
-        #print(f"GROQ_API_KEY: {api_key}")
-        if api_key:
-            try:
-                from groq import Groq  # type: ignore
+    api_key = os.getenv("GROQ_API_KEY")
+    if api_key:
+        from groq import Groq  # type: ignore
 
-                client = Groq(api_key=api_key)
-                model = os.getenv("GROQ_MODEL", "mixtral-8x7b-32768")
-                #print(f"Using Groq model: {model}")
-                prompt = (
-                    "You are an assistant for customer feedback insights. "
-                    "Given a star rating (1-5) and review text, return a JSON object with: "
-                    "'summary' (one concise sentence) and 'suggestions' (3-4 short, actionable items).\n\n"
-                    f"Rating: {rating}/5\nReview: {feedback}\n\n"
-                    "Respond ONLY with JSON having keys 'summary' and 'suggestions'."
-                )
-                resp = client.chat.completions.create(
-                    model=model,
-                    messages=[
-                        {"role": "system", "content": "Return concise, business-friendly insights only."},
-                        {"role": "user", "content": prompt},
-                    ],
-                    temperature=0.3,
-                )
-                print(f"Groq response: {resp}")
-                content = (resp.choices[0].message.content or "").strip()
-                data = _extract_json(content)
-                if data and "summary" in data and "suggestions" in data:
-                    return str(data["summary"]), list(data["suggestions"])[:4]
-            except Exception:
-                pass
-    except Exception:
-        pass
+        client = Groq(api_key=api_key)
+        model = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
+        prompt = (
+            "You are an assistant for customer feedback insights. "
+            "Given a star rating (1-5) and review text, return a JSON object with: "
+            "'summary' (one concise sentence) and 'suggestions' (3-4 short, actionable items).\n\n"
+            f"Rating: {rating}/5\nReview: {feedback}\n\n"
+            "Respond ONLY with JSON having keys 'summary' and 'suggestions'."
+        )
+        resp = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": "Return concise, business-friendly insights only."},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.3,
+            response_format={"type": "json_object"},
+        )
+        content = (resp.choices[0].message.content or "").strip()
+        data = _extract_json(content)
+        if data and "summary" in data and "suggestions" in data:
+            return str(data["summary"]), list(data["suggestions"])[:4]
 
+        # If the AI response is malformed, fall back to heuristic to avoid 500s
+        return _heuristic_summary(rating, feedback)
+
+    # Fallback only when no AI key is configured
     return _heuristic_summary(rating, feedback)
 
 
