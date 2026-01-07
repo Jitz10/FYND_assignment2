@@ -48,6 +48,7 @@ async def generate_summary_and_suggestions(
             response_format={"type": "json_object"},
         )
         content = (resp.choices[0].message.content or "").strip()
+        print("AI response content:", content)
         data = _extract_json(content)
         if data and "user_summary" in data and "user_suggestions" in data:
             classification = str(data.get("classification", "other"))
@@ -159,54 +160,6 @@ def _heuristic_summary(rating: int, feedback: str) -> Tuple[str, List[str], str,
             "Proactively follow up after remediation",
         ]
 
-    kw = cleaned.lower()
     classification = "other"
-    sarcasm_terms = ["lol", "haha", "sarcasm", "yeah right", "sure", "totally"]
-    negative_terms = [
-        "slow",
-        "lag",
-        "performance",
-        "loading",
-        "bug",
-        "crash",
-        "error",
-        "issue",
-        "price",
-        "cost",
-        "expensive",
-        "pricing",
-        "support",
-        "help",
-        "service",
-        "response",
-        "delay",
-        "late",
-        "shipping",
-        "delivery",
-        "problem",
-        "bad",
-        "hate",
-        "disappointed",
-    ]
-
-    if any(k in kw for k in sarcasm_terms):
-        classification = "sarcasm"
-    elif rating >= 4 and not any(k in kw for k in negative_terms):
-        classification = "genuine"
-    elif any(k in kw for k in ["slow", "lag", "performance", "loading"]):
-        vendor_suggestions.append("Improve performance and loading responsiveness")
-        classification = "product_issue"
-    elif any(k in kw for k in ["bug", "crash", "error", "issue"]):
-        vendor_suggestions.append("Fix stability issues and add regression tests")
-        classification = "product_issue"
-    elif any(k in kw for k in ["price", "cost", "expensive", "pricing"]):
-        vendor_suggestions.append("Review pricing and communicate value more clearly")
-        classification = "product_issue"
-    elif any(k in kw for k in ["support", "help", "service", "response"]):
-        vendor_suggestions.append("Improve support responsiveness and resolution quality")
-        classification = "delivery_issue"
-    elif any(k in kw for k in ["delay", "late", "shipping", "delivery"]):
-        vendor_suggestions.append("Improve delivery speed and tracking transparency")
-        classification = "delivery_issue"
 
     return summary, user_suggestions[:4], vendor_summary, vendor_suggestions[:4], classification
