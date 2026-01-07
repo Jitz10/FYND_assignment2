@@ -1,14 +1,21 @@
 from datetime import datetime
 from pathlib import Path
+import asyncio
 from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
 from .services.ai import generate_summary_and_suggestions
+from .services.analytics import (
+    broadcast_analytics_update,
+    compute_analytics_summary,
+    register_analytics_ws,
+    unregister_analytics_ws,
+)
 from .services.database import get_all_reviews, save_review, ping_database
 
 
@@ -60,6 +67,10 @@ async def root():
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend" / "user dashboard"
 app.mount("/ui", StaticFiles(directory=FRONTEND_DIR, html=True), name="ui")
 
+# Serve admin analytics dashboard at /analytics-ui
+FRONTEND_ANALYTICS_DIR = Path(__file__).resolve().parents[2] / "frontend" / "analytics"
+app.mount("/analytics-ui", StaticFiles(directory=FRONTEND_ANALYTICS_DIR, html=True), name="analytics-ui")
+
 
 @app.post("/reviews", response_model=ReviewRecord)
 async def create_review(review: ReviewIn) -> ReviewRecord:
@@ -93,6 +104,9 @@ async def create_review(review: ReviewIn) -> ReviewRecord:
             detail="Database unavailable. Please check MONGODB_URI/connectivity.",
         ) from exc
 
+    # Push analytics update without blocking the response
+    asyncio.create_task(broadcast_analytics_update())
+
     return ReviewRecord(
         _id=inserted_id,
         rating=review.rating,
@@ -124,3 +138,37 @@ async def list_reviews() -> List[ReviewRecord]:
 async def health():
     db_ok = await ping_database()
     return {"status": "ok", "db": "up" if db_ok else "down"}
+
+
+@app.get("/analytics/summary")
+async def analytics_summary(
+    website: Optional[str] = None,
+    product: Optional[str] = None,
+    classification: Optional[str] = None,
+):
+    filters = {}
+    if website:
+        filters["website"] = website
+    if product:
+        filters["product"] = product
+    if classification:
+        filters["classification"] = classification
+    try:
+        summary = await compute_analytics_summary(filters)
+        return summary
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database unavailable. Please check MONGODB_URI/connectivity.",
+        ) from exc
+
+
+@app.websocket("/ws/analytics")
+async def analytics_ws(websocket: WebSocket):
+    await register_analytics_ws(websocket)
+    try:
+        while True:
+            # Keep the connection alive; payloads are pushed from server on changes
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        await unregister_analytics_ws(websocket)

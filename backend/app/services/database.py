@@ -21,7 +21,9 @@ def _get_client() -> AsyncIOMotorClient:
     if _client is None:
         _client = AsyncIOMotorClient(
             MONGODB_URI,
-            serverSelectionTimeoutMS=5000,
+            serverSelectionTimeoutMS=15000,
+            socketTimeoutMS=20000,
+            connectTimeoutMS=15000,
         )
     return _client
 
